@@ -13,8 +13,8 @@ for (row in 1:nrow(gha_params)) {
     rho <- gha_params[row, "rho"]
     eir <- gha_params[row, "eir"]
     province <- gha_params[row, "adm1"]
-    itn_cov <- gha_params[row, "itn_cov"]
-    irs_cov <- gha_params[row, "irs_cov"]
+    itn_cov <- gha_params[row, 'itn_cov']
+    irs_cov <- gha_params[row, 'irs_cov']
     treatment_seeking <- gha_params[row, "treatment_seeking"]
     # TODO
     adm1 <- run_model(
@@ -30,7 +30,7 @@ for (row in 1:nrow(gha_params)) {
     )
     plot(adm1$t,
         adm1$prev,
-        main = paste("Prevalance -", province),
+        main = "Prevalance",
         ylim = c(0, 1),
         type = "l"
     )
