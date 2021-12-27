@@ -23,7 +23,7 @@ LineBreak="${FontGreen}*********************************************************
 stty sane
 clear
 
-# Display an informational banner if the "test" argument is passed.
+# Display an informational banner if the "mbench" argument is passed.
 # This allows a user to check the script flow while disabling functionality that would modify the environment.
 TestState=0
 if [ $1 ] && [ $1 == "test" ]
