@@ -15,6 +15,8 @@ def missing_data(
     :return: df: calculated dataframe with filled data
     """
 
+    global result_df
+
     def get_adjacent(
             adm1: str,
             adjacent_list: pd.DataFrame,
@@ -38,8 +40,8 @@ def missing_data(
     # 1. notation 标记
     df["__missing"] = df[column].map(lambda x: math.isnan(x))
     # 2. get missing adm1 regions
-    for i in range(round_n):
-        df = df.apply(
+    for _ in range(round_n):
+        result_df = df.apply(
             lambda row: interpolate(
                 _df=df,
                 targeted_adm1=row.name,
@@ -51,5 +53,5 @@ def missing_data(
             axis=1,
         )
 
-    df.drop(columns=["__missing"])
-    return df
+    result_df = result_df.drop(columns=["__missing"])
+    return result_df
