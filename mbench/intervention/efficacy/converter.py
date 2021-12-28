@@ -54,7 +54,6 @@ def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae', verbose=0)
     # from mortality in pbo bioassay to mortality in pbo hut trail
     mortality_pbo_hut_trail = mortality_bioassay_to_hut_trail(mortality_pbo_bioassay)
 
-
     # m_p
     # from mortality to number of mosquitoes entering hut
     def ratio_of_mosquitoes_entering_hut_to_without_net(mortality_hut_trail):
