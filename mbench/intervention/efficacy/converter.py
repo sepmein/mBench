@@ -2,7 +2,7 @@ import math
 
 from scipy.special import expit
 
-half_life_itn = 365
+half_life_itn = 365 * 2.65
 
 
 def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae'):
