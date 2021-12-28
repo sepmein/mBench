@@ -1,3 +1,5 @@
+# Churcher, T. S., Lissenden, N., Griffin, J. T., Worrall, E., & Ranson, H. (2016). The impact of pyrethroid resistance on the efficacy and effectiveness of bednets for malaria control in Africa. ELife, 5(AUGUST), 1–26. https://doi.org/10.7554/eLife.16090.001
+
 import math
 
 from scipy.special import expit
