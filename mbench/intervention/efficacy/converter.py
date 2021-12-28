@@ -7,7 +7,7 @@ from scipy.special import expit
 half_life_itn = 365 * 2.65
 
 
-def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae'):
+def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae', verbose=0):
     # proportion mosquitoes dying in a discriminating dose pyrethroid bioassay
     # mortality_pyrethroid_bioassay
 
@@ -89,9 +89,10 @@ def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae'):
     def proportion_of_mosquitoes_entering_hut_exiting_without_feeding_accounting_deterrence(p_entering, p_exit):
         return p_entering * p_exit + (1 - p_entering)
 
-    p_exit_with_deterrence_regular = proportion_of_mosquitoes_entering_hut_exiting_without_feeding_accounting_deterrence(
-        p_entering_regular, p_exiting_regular
-    )
+    p_exit_with_deterrence_regular = \
+        proportion_of_mosquitoes_entering_hut_exiting_without_feeding_accounting_deterrence(
+            p_entering_regular, p_exiting_regular
+        )
     p_exit_with_deterrence_pbo = proportion_of_mosquitoes_entering_hut_exiting_without_feeding_accounting_deterrence(
         p_entering_pbo, p_exiting_pbo
     )
@@ -125,7 +126,7 @@ def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae'):
     # r_p_0
     k_0 = 0.7
 
-    def repeating(k_p_d, j_p_d, l_p_d, k_0=k_0):
+    def repeating(k_p_d, j_p_d, l_p_d):
         return (1 - k_p_d / k_0) * (j_p_d / (j_p_d + l_p_d))
 
     repeating_regular = repeating(
@@ -169,16 +170,49 @@ def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae'):
     gamma_p_regular = gamma_p(mortality_pyrethroid_hut_trail)
     gamma_p_pbo = gamma_p(mortality_pbo_hut_trail)
 
-    r_m = 0.25
+    r_m = 0.24
 
     # r_p repeat rate with decay
-    def r_p(r_p_0, gamma_p):
+    def r_p(r_p_0, gamma_p_):
         # suppose life years of itn is 3 year, remind to change this if using other parameters
-        return (r_p_0 - r_m) * math.exp(-1 * gamma_p * half_life_itn) + r_m
+        return (r_p_0 - r_m) * math.exp(-1 * gamma_p_ * half_life_itn) + r_m
 
     repeating_regular_with_decay = r_p(repeating_regular, gamma_p_regular)
     repeating_pbo_with_decay = r_p(repeating_pbo, gamma_p_pbo)
 
-    rds_regular = (repeating_regular, repeating_regular_with_decay, dying_regular, feeding_regular)
-    rds_pbo = (repeating_pbo, repeating_pbo_with_decay, dying_pbo, feeding_pbo)
-    return rds_regular, rds_pbo
+    rds_regular = (
+        repeating_regular,
+        repeating_regular_with_decay,
+        dying_regular,
+        feeding_regular
+    )
+    pyrethroid_outputs = (
+        mortality_pyrethroid_bioassay,
+        mortality_pyrethroid_hut_trail,
+        p_entering_regular,
+        p_feed_regular,
+        p_exiting_regular,
+        p_exit_with_deterrence_regular,
+        p_feed_with_deterrence_regular,
+        mortality_pyrethroid_hut_trail_with_deterrence,
+    )
+    rds_pbo = (
+        repeating_pbo,
+        repeating_pbo_with_decay,
+        dying_pbo,
+        feeding_pbo
+    )
+    pbo_outputs = (
+        mortality_pbo_bioassay,
+        mortality_pbo_hut_trail,
+        p_entering_pbo,
+        p_feed_pbo,
+        p_exiting_pbo,
+        p_exit_with_deterrence_pbo,
+        p_feed_with_deterrence_pbo,
+        mortality_pbo_hut_trail_with_deterrence,
+    )
+    if verbose == 1:
+        return rds_regular, rds_pbo, pyrethroid_outputs, pbo_outputs
+    elif verbose == 0:
+        return rds_regular, rds_pbo
