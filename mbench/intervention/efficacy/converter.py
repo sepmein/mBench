@@ -1,4 +1,6 @@
-# Churcher, T. S., Lissenden, N., Griffin, J. T., Worrall, E., & Ranson, H. (2016). The impact of pyrethroid resistance on the efficacy and effectiveness of bednets for malaria control in Africa. ELife, 5(AUGUST), 1–26. https://doi.org/10.7554/eLife.16090.001
+# Churcher, T. S., Lissenden, N., Griffin, J. T., Worrall, E., & Ranson, H. (2016). The impact of pyrethroid
+# resistance on the efficacy and effectiveness of bednets for malaria control in Africa. ELife, 5(AUGUST),
+# 1–26. https://doi.org/10.7554/eLife.16090.001
 
 import math
 
@@ -49,13 +51,9 @@ def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae', verbose=0)
     mortality_pbo_bioassay = expit(
         beta1 + beta2 * (mortality_pyrethroid_bioassay - tao) / (1 + beta3 * (mortality_pyrethroid_bioassay - tao)))
 
-    print('mortality regular bioassay:', "{:10.2f}".format(mortality_pyrethroid_bioassay))
-    print('mortality pbo bioassay :', "{:10.2f}".format(mortality_pbo_bioassay))
     # from mortality in pbo bioassay to mortality in pbo hut trail
     mortality_pbo_hut_trail = mortality_bioassay_to_hut_trail(mortality_pbo_bioassay)
 
-    print('mortality regular hut:', "{:10.2f}".format(mortality_pyrethroid_hut_trail))
-    print('mortality pbo hut:', "{:10.2f}".format(mortality_pbo_hut_trail))
 
     # m_p
     # from mortality to number of mosquitoes entering hut
@@ -68,8 +66,6 @@ def bioassay_to_rds(mortality_pyrethroid_bioassay, species='gambiae', verbose=0)
 
     p_entering_regular = ratio_of_mosquitoes_entering_hut_to_without_net(mortality_pyrethroid_hut_trail)
     p_entering_pbo = ratio_of_mosquitoes_entering_hut_to_without_net(mortality_pbo_hut_trail)
-    print('p_enter_regular', "{:10.2f}".format(p_entering_regular))
-    print('p_enter_pbo', "{:10.2f}".format(p_entering_pbo))
 
     # k_p
     def proportion_of_mosquitoes_successfully_feed_upon_entering(mortality_hut_trail):
