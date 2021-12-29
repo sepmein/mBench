@@ -6,5 +6,6 @@ with open('requirements.txt', 'r') as f:
 setuptools.setup(
     name="mbench",
     packages=['mbench'],
-    install_requires=install_requires
+    install_requires=install_requires,
+    version="0.0.5"
 )

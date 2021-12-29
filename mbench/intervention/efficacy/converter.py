@@ -50,9 +50,28 @@ class Converter:
         self.r_m = 0.24
 
     def mortality_bioassay_to_hut_trail(self, mortality_bioassay):
+        """
+        formula 2, from x to l
+        :param mortality_bioassay:
+        :return: mortality hut trail
+        """
         return expit(self.alpha1 + self.alpha2 * (mortality_bioassay - self.tao))
 
+    def mortality_pbo_bioassay(self, mortality_pyrethroid_bioassay):
+        """
+        formula 4, from x to f
+        :param mortality_pyrethroid_bioassay:
+        :return: mortality pbo bioassay
+        """
+        return expit(self.beta1 + self.beta2 * (mortality_pyrethroid_bioassay - self.tao) / (
+                1 + self.beta3 * (mortality_pyrethroid_bioassay - self.tao)))
+
     def ratio_of_mosquitoes_entering_hut_to_without_net(self, mortality_hut_trail):
+        """
+        formula 8, from l to m_p
+        :param mortality_hut_trail:
+        :return:
+        """
         return 1 - (
                 self.delta1 +
                 self.delta2 * (mortality_hut_trail - self.tao) +
@@ -60,41 +79,105 @@ class Converter:
         )
 
     def proportion_of_mosquitoes_successfully_feed_upon_entering(self, mortality_hut_trail):
+        '''
+        formula 11, from l to k_p
+        :param mortality_hut_trail:
+        :return:
+        '''
         return self.theta1 * math.exp(self.theta2 * (1 - mortality_hut_trail - self.tao))
 
     @staticmethod
     def proportion_of_mosquitoes_exiting_without_feeding(p_mortality, p_feed):
+        """
+        j_p = 1 - l_p - k_p
+        :param p_mortality:
+        :param p_feed:
+        :return:
+        """
         return 1 - p_mortality - p_feed
 
     @staticmethod
     def proportion_of_mosquitoes_entering_hut_exiting_without_feeding_accounting_deterrence(p_entering, p_exit):
+        """
+        j_p' = m_p * j_p + (1 - m_p)
+        :param p_entering:
+        :param p_exit:
+        :return:
+        """
         return p_entering * p_exit + (1 - p_entering)
 
     @staticmethod
     def proportion_of_mosquitoes_successfully_feed_upon_entering_accounting_deterrence(p_entering, p_feed):
+        """
+        k_p' = m_p * k_p
+        :param p_entering:
+        :param p_feed:
+        :return:
+        """
         return p_entering * p_feed
 
     @staticmethod
     def proportion_of_mosquitoes_dead_accounting_deterrence(p_entering, p_death):
+        """
+        l_p' = m_p * l_p
+        :param p_entering:
+        :param p_death:
+        :return:
+        """
         return p_entering * p_death
 
     def repeating(self, k_p_d, j_p_d, l_p_d):
+        """
+        formula 12, calculating r_p_0
+        :param k_p_d:
+        :param j_p_d:
+        :param l_p_d:
+        :return:
+        """
         return (1 - k_p_d / self.k_0) * (j_p_d / (j_p_d + l_p_d))
 
     def dying(self, k_p_d, j_p_d, l_p_d):
+        """
+        formula 13, calculating d_p_0
+        :param k_p_d:
+        :param j_p_d:
+        :param l_p_d:
+        :return:
+        """
         return (1 - k_p_d / self.k_0) * (l_p_d / (j_p_d + l_p_d))
 
     def feeding(self, k_p_d):
+        """
+        formula 14, calculating s_p_0
+        :param k_p_d:
+        :return:
+        """
         return k_p_d / self.k_0
 
     def gamma_p(self, mortality_hut_trail):
+        """
+        formula 16, calculating gamma_p, the decay parameter
+        :param mortality_hut_trail:
+        :return:
+        """
         return expit(self.mu_p + self.rho_p * (mortality_hut_trail - self.tao))
 
     def r_p(self, r_p_0, gamma_p_):
+        """
+        formula 17, calculate r_p
+        :param r_p_0:
+        :param gamma_p_:
+        :return:
+        """
         # suppose life years of itn is 3 year, remind to change this if using other parameters
         return (r_p_0 - self.r_m) * math.exp(-1 * gamma_p_ * self.half_life_itn) + self.r_m
 
     def bioassay_to_rds(self, mortality_pyrethroid_bioassay):
+        """
+        from mortality_pyrethroid_bioassay calculate efficacy results for bednets and PBO nets
+        :param mortality_pyrethroid_bioassay:
+        :return:
+        """
         # proportion mosquitoes dying in a discriminating dose pyrethroid bioassay
         # mortality_pyrethroid_bioassay
 
@@ -102,10 +185,7 @@ class Converter:
         mortality_pyrethroid_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pyrethroid_bioassay)
 
         # from pyrethroid mortality in bioassay compute mortality in pbo bioassay
-        mortality_pbo_bioassay = expit(
-            self.beta1 + self.beta2 * (mortality_pyrethroid_bioassay - self.tao) / (
-                    1 + self.beta3 * (mortality_pyrethroid_bioassay - self.tao)))
-
+        mortality_pbo_bioassay = self.mortality_pbo_bioassay(mortality_pyrethroid_bioassay)
         # from mortality in pbo bioassay to mortality in pbo hut trail
         mortality_pbo_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pbo_bioassay)
 
@@ -124,7 +204,6 @@ class Converter:
         p_exiting_pbo = self.proportion_of_mosquitoes_exiting_without_feeding(mortality_pbo_hut_trail, p_feed_pbo)
 
         # j_p'
-
         p_exit_with_deterrence_regular = \
             self.proportion_of_mosquitoes_entering_hut_exiting_without_feeding_accounting_deterrence(
                 p_entering_regular, p_exiting_regular
@@ -135,7 +214,6 @@ class Converter:
             )
 
         # k_p'
-
         p_feed_with_deterrence_regular = \
             self.proportion_of_mosquitoes_successfully_feed_upon_entering_accounting_deterrence(
                 p_entering_regular,
@@ -159,7 +237,6 @@ class Converter:
         )
 
         # r_p_0
-
         repeating_regular = self.repeating(
             k_p_d=p_feed_with_deterrence_regular,
             j_p_d=p_exit_with_deterrence_regular,
@@ -172,7 +249,6 @@ class Converter:
         )
 
         # d_p_0
-
         dying_regular = self.dying(k_p_d=p_feed_with_deterrence_regular,
                                    j_p_d=p_exit_with_deterrence_regular,
                                    l_p_d=mortality_pyrethroid_hut_trail_with_deterrence
@@ -190,7 +266,6 @@ class Converter:
 
         # decay rate
         # decay parameter rho_p
-
         gamma_p_regular = self.gamma_p(mortality_pyrethroid_hut_trail)
         gamma_p_pbo = self.gamma_p(mortality_pbo_hut_trail)
 
