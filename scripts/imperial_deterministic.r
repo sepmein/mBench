@@ -7,9 +7,10 @@ library(ICDMM,
 library(gdata)
 library(ggplot2)
 
-gha_params <- read.csv("./Data/GHA/gha.csv")
+gha_params <- read.csv("/Users/sepmein/Dropbox/benchmarking/Data/GHA/gha.csv")
 gha_params$adm1
-for (row in 1:nrow(gha_params)) {
+#for (row in 1:nrow(gha_params)) {
+    row <- 1
     eta <- gha_params[row, "eta"]
     rho <- gha_params[row, "rho"]
     eir <- gha_params[row, "eir"]
