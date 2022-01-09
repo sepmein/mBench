@@ -9,8 +9,7 @@ library(ggplot2)
 
 gha_params <- read.csv("/Users/sepmein/Dropbox/benchmarking/Data/GHA/gha.csv")
 gha_params$adm1
-#for (row in 1:nrow(gha_params)) {
-    row <- 1
+for (row in 1:nrow(gha_params)) {
     eta <- gha_params[row, "eta"]
     rho <- gha_params[row, "rho"]
     eir <- gha_params[row, "eir"]

@@ -4,7 +4,10 @@ import pandas as pd
 
 
 def missing_data(
-        df: pd.DataFrame, neighbour: pd.DataFrame, column: str, round_n: int = 3
+    df: pd.DataFrame, 
+    neighbour: pd.DataFrame, 
+    column: str, 
+    round_n: int
 ):
     """
     Missing_data_interpolate(), when data was missing in some provinces, use this function to interpolate the missing data.
@@ -16,7 +19,6 @@ def missing_data(
     """
 
     global result_df
-
     def get_adjacent(
             adm1: str,
             adjacent_list: pd.DataFrame,
@@ -41,7 +43,7 @@ def missing_data(
     df["__missing"] = df[column].map(lambda x: math.isnan(x))
     # 2. get missing adm1 regions
     for _ in range(round_n):
-        result_df = df.apply(
+        df = df.apply(
             lambda row: interpolate(
                 _df=df,
                 targeted_adm1=row.name,
@@ -53,5 +55,7 @@ def missing_data(
             axis=1,
         )
 
+        
+    result_df = df
     result_df = result_df.drop(columns=["__missing"])
     return result_df
