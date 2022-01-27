@@ -45,7 +45,7 @@ class Converter:
         self.rho_p = -3.05
 
         # k_0
-        self.k_0 = 0.7
+        self.k_0 = 0.699
 
         self.r_m = 0.24
 
@@ -79,11 +79,11 @@ class Converter:
         )
 
     def proportion_of_mosquitoes_successfully_feed_upon_entering(self, mortality_hut_trail):
-        '''
+        """
         formula 11, from l to k_p
         :param mortality_hut_trail:
         :return:
-        '''
+        """
         return self.theta1 * math.exp(self.theta2 * (1 - mortality_hut_trail - self.tao))
 
     @staticmethod
@@ -172,6 +172,17 @@ class Converter:
         # suppose life years of itn is 3 year, remind to change this if using other parameters
         return (r_p_0 - self.r_m) * math.exp(-1 * gamma_p_ * self.half_life_itn) + self.r_m
 
+    def mortality_pyrethroid_to_mortality_hut(self, mortality_pyrethroid_bioassay):
+        # from pyrethroid mortality in bioassay compute mortality in pyrethroid hut trail using eq 4
+        mortality_pyrethroid_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pyrethroid_bioassay)
+
+        # from pyrethroid mortality in bioassay compute mortality in pbo bioassay
+        mortality_pbo_bioassay = self.mortality_pbo_bioassay(mortality_pyrethroid_bioassay)
+        # from mortality in pbo bioassay to mortality in pbo hut trail
+        mortality_pbo_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pbo_bioassay)
+
+        return mortality_pyrethroid_hut_trail, mortality_pbo_bioassay, mortality_pbo_hut_trail
+
     def bioassay_to_rds(self, mortality_pyrethroid_bioassay):
         """
         from mortality_pyrethroid_bioassay calculate efficacy results for bednets and PBO nets
@@ -181,13 +192,10 @@ class Converter:
         # proportion mosquitoes dying in a discriminating dose pyrethroid bioassay
         # mortality_pyrethroid_bioassay
 
-        # from pyrethroid mortality in bioassay compute mortality in pyrethroid hut trail using eq 4
-        mortality_pyrethroid_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pyrethroid_bioassay)
-
-        # from pyrethroid mortality in bioassay compute mortality in pbo bioassay
-        mortality_pbo_bioassay = self.mortality_pbo_bioassay(mortality_pyrethroid_bioassay)
-        # from mortality in pbo bioassay to mortality in pbo hut trail
-        mortality_pbo_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pbo_bioassay)
+        mortality_pyrethroid_hut_trail, \
+        mortality_pbo_bioassay, \
+        mortality_pbo_hut_trail = self.mortality_pyrethroid_to_mortality_hut(
+            mortality_pyrethroid_bioassay)
 
         # m_p
         # from mortality to number of mosquitoes entering hut
@@ -309,3 +317,57 @@ class Converter:
             return rds_regular, rds_pbo, pyrethroid_outputs, pbo_outputs
         else:
             return rds_regular, rds_pbo
+
+
+class Converter_2022(Converter):
+    """
+    from the paper by Ellie
+    https://doi.org/10.1016/S2542-5196(21)00296-5
+    """
+
+    def __init__(self, species='Gambiae', verbose=False):
+        super(Converter_2022, self).__init__(species, verbose)
+        self.alpha1 = 0.89
+        self.alpha2 = 0.47
+
+        # equation s1.2
+        self.beta1 = -1.43
+        self.beta2 = 5.60
+
+        # for calculation ratio of mosquito entering hut with / without a hut
+        self.delta1 = 0.36
+        self.delta2 = 0.49
+        self.delta3 = 2.57
+
+        # calculating decay
+        self.mu_p = -2.43
+        self.rho_p = -3.01
+
+    def mortality_bioassay_to_hut_trail(self, mortality_bioassay):
+        """
+        mortality from bioassay to hut trail
+        :param mortality_bioassay:
+        :return: mortality hut trail
+        """
+        return 1 - 1 / math.pow(1 + mortality_bioassay / self.alpha1, -1 * self.alpha2)
+
+    def mortality_hut_trail_from_pyrethroid_to_pbo(self, mortality_pyrethroid_hut_trail):
+        """
+        from l1 to l2
+        :param mortality_pyrethroid_hut_trail:
+        :return: mortality PBO hut trail
+        """
+        return 1 / (1 + math.exp(-1 * (self.beta1 + self.beta2 * mortality_pyrethroid_hut_trail)))
+
+    def ratio_of_mosquitoes_entering_hut_to_without_net(self, mortality_hut_trail):
+        return self.delta1 * math.exp(
+            self.delta2 * (1 - math.exp((1 - mortality_hut_trail) * self.delta3)) / self.delta3)
+
+    def proportion_of_mosquitoes_successfully_feed_upon_entering(self, mortality_hut_trail):
+        return 1 - math.exp(self.theta1 * (1 - math.exp(self.theta2 * (1 - mortality_hut_trail))) / self.theta2)
+
+    def mortality_pyrethroid_to_mortality_hut(self, mortality_pyrethroid_bioassay):
+        mortality_pyrethroid_hut_trail = self.mortality_bioassay_to_hut_trail(mortality_pyrethroid_bioassay)
+        mortality_pbo_bioassay =  None
+        mortality_pbo_hut_trail = self.mortality_hut_trail_from_pyrethroid_to_pbo(mortality_pyrethroid_hut_trail)
+        return mortality_pyrethroid_hut_trail, mortality_pbo_bioassay, mortality_pbo_hut_trail
