@@ -8,7 +8,7 @@ library(tidyverse)
 library(ggplot2)
 library(gdata)
 library("gridExtra")
-
+library("scales")
 
 registerDoParallel(detectCores())
 
@@ -23,7 +23,7 @@ itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review <-
 
 rows <- 1:nrow(gha_params)
 resistances <- seq(0, 100, by = 5) / 100
-pbo_itn_coverage_ratios <- seq(0, 100, by = 5)
+pbo_itn_coverage_ratios <- seq(70, 80, by = .5)
 
 output <- foreach(row = rows, .combine = 'rbind') %:%
   foreach(r = resistances, .combine = 'rbind') %:%
@@ -39,16 +39,10 @@ output <- foreach(row = rows, .combine = 'rbind') %:%
     irs_cov <- gha_params[row, "irs_cov"]
     treatment_seeking <-
       gha_params[row, "treatment_seeking"]
-    d_ITN_0 <- gha_params[row, "d_ITN_0"]
-    d_PBO_0 <- gha_params[row, "d_PBO_0"]
-    r_ITN_0 <- gha_params[row, "r_ITN_0"] # nolint
-    r_PBO_0 <- gha_params[row, "r_PBO_0"]
     total_population <-
       gha_params[row, "total_population"]
     llins_distributed <-
       gha_params[row, "llins_distributed"]
-    half_life_itn <- gha_params[row, "h_ITN"] * 365
-    half_life_pbo <- gha_params[row, "h_PBO"] * 365
 
     pbo_cov <- itn_cov * ratio / 100
     df_sub <- subset(itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review,
@@ -107,4 +101,22 @@ output <- foreach(row = rows, .combine = 'rbind') %:%
   }
 
 write.csv(output,
-          "~/Dropbox/benchmarking/Results/sweet.csv")
+          "~/Dropbox/benchmarking/Results/sweet-finer-70-80.csv")
+
+output <- read.csv("~/Dropbox/benchmarking/Results/sweet.csv")
+ggplot(
+  data = output,
+  aes(x = vector_resistance*100, y = pbo_cov_relative_to_itn)
+) + geom_tile(aes(fill=cases_difference/population))+
+  ylab("PBO coverage relative to ITNs(%)") +
+  xlab("Vector Resistance(%)") +
+  guides(linetype = "none") +
+  ggtitle(
+    "IM - Influences on Coverage and Resistance on Prevalence"
+  ) +
+  scale_fill_gradientn(colors = hcl.colors(20, "BrBG"),
+                       values = rescale(c(-500, 0, 100))
+                       ) +
+  coord_fixed() +
+  guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
+  facet_wrap(. ~ adm1, ncol = 4)
