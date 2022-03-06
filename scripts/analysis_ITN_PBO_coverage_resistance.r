@@ -21,14 +21,9 @@ itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review <-
     "/Users/sepmein/dev/github/Mosquito-Net-Parameters/estimates/best_params_from_systematic_review1.csv"
   )
 
-adm1 <- c()
-vector_resistance <- c()
-pbo_cov_relative_to_itn <- c()
-cases_difference <- c()
-
 rows <- 1:nrow(gha_params)
 resistances <- seq(0, 100, by = 5) / 100
-pbo_itn_coverage_ratios <- seq(40, 80, by = 2)
+pbo_itn_coverage_ratios <- seq(0, 100, by = 5)
 
 output <- foreach(row = rows, .combine = 'rbind') %:%
   foreach(r = resistances, .combine = 'rbind') %:%
@@ -107,7 +102,7 @@ output <- foreach(row = rows, .combine = 'rbind') %:%
       vector_resistance=r,
       pbo_cov_relative_to_itn=ratio,
       cases_difference=n_reduced_cases_net,
-      population=population
+      population=total_population
     ))
   }
 
