@@ -104,19 +104,19 @@ write.csv(output,
           "~/Dropbox/benchmarking/Results/sweet-finer-70-80.csv")
 
 output <- read.csv("~/Dropbox/benchmarking/Results/sweet.csv")
+
 ggplot(
   data = output,
   aes(x = vector_resistance*100, y = pbo_cov_relative_to_itn)
-) + geom_tile(aes(fill=cases_difference/population))+
+) + geom_contour_filled(aes(z=cases_difference/population))+
   ylab("PBO coverage relative to ITNs(%)") +
   xlab("Vector Resistance(%)") +
-  guides(linetype = "none") +
   ggtitle(
     "IM - Influences on Coverage and Resistance on Prevalence"
   ) +
-  scale_fill_gradientn(colors = hcl.colors(20, "BrBG"),
-                       values = rescale(c(-500, 0, 100))
-                       ) +
-  coord_fixed() +
-  guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
+  #scale_fill_distiller(palette = "BrBG",
+               #       values = rescale(c(-500., 0., 100.))
+               #      ) +
+  #coord_fixed() +
+  #guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
   facet_wrap(. ~ adm1, ncol = 4)
