@@ -16,6 +16,7 @@ library("gridExtra")
 gha_params <-
   read.csv("/Users/sepmein/Dropbox/benchmarking/Data/GHA/gha.csv")
 gha_params$adm1
+plot_export_path <- "/Users/sepmein/Dropbox/benchmarking/Results/PBO vs LLINs/"
 
 cases_reduction_with_net <- c()
 cases_reduction_with_pbo_same_coverage <- c()
@@ -37,8 +38,8 @@ om_cases_pbo <- c()
 om_cases_pbo_gf <- c()
 om_cases_pbo_ellie <- c()
 
-plot_export_path <- "/Users/sepmein/Dropbox/benchmarking/Results/PBO vs LLINs/"
 imperial_plots_list <- list()
+
 for (row in 1:nrow(gha_params)) {
   eta <- gha_params[row, "eta"]
   rho <- gha_params[row, "rho"]
