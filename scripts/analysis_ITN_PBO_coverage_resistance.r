@@ -2,8 +2,9 @@ library(parallel)
 library(foreach)
 library(doParallel)
 library(ICDMM,
-        help,
-        pos = 2, lib.loc = NULL)
+  help,
+  pos = 2, lib.loc = NULL
+)
 library(tidyverse)
 library(ggplot2)
 library(gdata)
@@ -22,12 +23,13 @@ itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review <-
   )
 
 rows <- 1:nrow(gha_params)
-resistances <- seq(0, 100, by = 5) / 100
-pbo_itn_coverage_ratios <- seq(70, 80, by = .5)
+rows <- 1:1
+resistances <- seq(0, 100, by = 50) / 100
+pbo_itn_coverage_ratios <- seq(70, 80, by = 5)
 
-output <- foreach(row = rows, .combine = 'rbind') %:%
-  foreach(r = resistances, .combine = 'rbind') %:%
-  foreach(ratio = pbo_itn_coverage_ratios, .combine = 'rbind') %dopar% {
+output <- foreach(row = rows, .combine = "rbind") %:%
+  foreach(r = resistances, .combine = "rbind") %:%
+  foreach(ratio = pbo_itn_coverage_ratios, .combine = "rbind") %dopar% {
     eta <- gha_params[row, "eta"]
     rho <- gha_params[row, "rho"]
     eir <- gha_params[row, "eir"]
@@ -45,8 +47,10 @@ output <- foreach(row = rows, .combine = 'rbind') %:%
       gha_params[row, "llins_distributed"]
 
     pbo_cov <- itn_cov * ratio / 100
-    df_sub <- subset(itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review,
-                     resistance == r)
+    df_sub <- subset(
+      itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review,
+      resistance == r
+    )
     d_ITN_0 <- df_sub$d10
     d_PBO_0 <- df_sub$d20
     r_ITN_0 <- df_sub$r10
@@ -92,31 +96,34 @@ output <- foreach(row = rows, .combine = 'rbind') %:%
       (prevalence_with_net - prevalence_switching_pbo)
 
     return(data.frame(
-      adm1=province,
-      vector_resistance=r,
-      pbo_cov_relative_to_itn=ratio,
-      cases_difference=n_reduced_cases_net,
-      population=total_population
+      adm1 = province,
+      vector_resistance = r,
+      pbo_cov_relative_to_itn = ratio,
+      cases_difference = n_reduced_cases_net,
+      population = total_population
     ))
   }
 
-write.csv(output,
-          "~/Dropbox/benchmarking/Results/sweet-finer-70-80.csv")
+write.csv(
+  output,
+  "~/Dropbox/benchmarking/Results/sweet-test.csv"
+)
 
 output <- read.csv("~/Dropbox/benchmarking/Results/sweet.csv")
 
 ggplot(
   data = output,
-  aes(x = vector_resistance*100, y = pbo_cov_relative_to_itn)
-) + geom_contour_filled(aes(z=cases_difference/population))+
+  aes(x = vector_resistance * 100, y = pbo_cov_relative_to_itn)
+) +
+  geom_contour_filled(aes(z = cases_difference / population)) +
   ylab("PBO coverage relative to ITNs(%)") +
   xlab("Vector Resistance(%)") +
   ggtitle(
     "IM - Influences on Coverage and Resistance on Prevalence"
   ) +
-  #scale_fill_distiller(palette = "BrBG",
-               #       values = rescale(c(-500., 0., 100.))
-               #      ) +
-  #coord_fixed() +
-  #guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
+  # scale_fill_distiller(palette = "BrBG",
+  #       values = rescale(c(-500., 0., 100.))
+  #      ) +
+  # coord_fixed() +
+  # guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
   facet_wrap(. ~ adm1, ncol = 4)
