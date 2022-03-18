@@ -2,8 +2,8 @@ library(parallel)
 library(foreach)
 library(doParallel)
 library(ICDMM,
-  help,
-  pos = 2, lib.loc = NULL
+        help,
+        pos = 2, lib.loc = NULL
 )
 library(tidyverse)
 library(ggplot2)
@@ -14,37 +14,34 @@ library("here")
 
 source(here("mbench", "scripts", "set_env.R"))
 source(here("mbench", "scripts", "get_hut_trail_outcome_by_resistance.R"))
-
-plot_export_path <-
-  "/Users/sepmein/Dropbox/benchmarking/Results/ITN_PBO_Coverage_Resistance/" # nolint
-itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review <-
-  read.csv(
-    "/Users/sepmein/dev/github/Mosquito-Net-Parameters/estimates/best_params_from_systematic_review1.csv"
-  )
+source(here('mbench', "scripts", "get_prevalence_by_eir.R"))
 
 rows <- 1:nrow(gha_params)
-resistances <- seq(90, 100, by = 1) / 100
-pbo_itn_coverage_ratios <- seq(0, 100, by = 2)
+prevalences <- c(5, 10, 20, 30)
+itn_covs <- c(0.6, 0.8)
+
+plot_export_path <- here("Results", "ITNs_different_levels_of_prevalence")
+
+cases_reduction_with_net <- c()
 
 output <- foreach(row = rows, .combine = "rbind") %:%
-  foreach(ratio = pbo_itn_coverage_ratios, .combine = "rbind") %:%
-  foreach(r = resistances, .combine = "rbind") %dopar% {
+  foreach(prevalence = prevalences, .combine = "rbind") %:%
+  foreach(itn_cov = itn_covs, .combine = "rbind") %dopar% {
     eta <- gha_params[row, "eta"]
     rho <- gha_params[row, "rho"]
-    eir <- gha_params[row, "eir"]
+    eir <- get_eir_by_prevalence(prevalence)
     province <- gha_params[row, "adm1"]
     old_province <- gha_params[row, "old_district_name"]
-    itn_cov <- gha_params[row, "itn_cov"]
-    irs_cov <- gha_params[row, "irs_cov"]
+    itn_cov <- itn_cov
     treatment_seeking <-
       gha_params[row, "treatment_seeking"]
     total_population <-
       gha_params[row, "total_population"]
     llins_distributed <-
       gha_params[row, "llins_distributed"]
+    resistance <- 1 - gha_params[row, "MORTALITY_ADJUSTED"] / 100
 
-    pbo_cov <- itn_cov * ratio / 100
-    hut_trail_outcomes <- get_hut_trail_outcome_by_resistance(r)
+    hut_trail_outcomes <- get_hut_trail_outcome_by_resistance(resistance)
     d_itn <- hut_trail_outcomes$d_itn
     d_pbo <- hut_trail_outcomes$d_pbo
     r_itn <- hut_trail_outcomes$r_itn
@@ -56,51 +53,31 @@ output <- foreach(row = rows, .combine = "rbind") %:%
       init_EIR = eir,
       country = "Ghana",
       admin2 = old_province,
-      time = 365 * 4,
+      time = 365 * 5,
       num_int = 3,
       itn_cov = itn_cov,
-      irs_cov = irs_cov,
       d_ITN0 = d_itn,
       r_ITN0 = r_itn,
       itn_half_life = h_itn,
-      ITN_IRS_on = 200,
+      ITN_IRS_on = 1,
+      ITN_interval = 3 * 365,
       init_ft = treatment_seeking
     )
 
     prevalence_with_itn <- sum(output_with_itn$prev)
 
-    output_with_pbo <- run_model(
-      init_EIR = eir,
-      country = "Ghana",
-      admin2 = old_province,
-      time = 365 * 4,
-      num_int = 3,
-      itn_cov = pbo_cov,
-      irs_cov = irs_cov,
-      d_ITN0 = d_pbo,
-      r_ITN0 = r_pbo,
-      itn_half_life = h_pbo,
-      ITN_IRS_on = 200,
-      init_ft = treatment_seeking
-    )
-
-    prevalence_switching_pbo <-
-      sum(output_with_pbo$prev)
-    case_difference <- total_population *
-      (prevalence_with_itn - prevalence_switching_pbo)
-
     return(data.frame(
       adm1 = province,
-      vector_resistance = r,
-      pbo_cov_relative_to_itn = ratio,
-      cases_difference = case_difference,
+      initial_prevalence = prevalence,
+      itn_coverage = itn_cov,
+      prevalence_with_itn = prevalence_with_itn,
       total_population = total_population
     ))
   }
 
 write.csv(
   output,
-  "~/Dropbox/benchmarking/Results/sweet-finer-resistance-90.csv"
+  here("Results", "ITN_with_different_prevalance_level.csv")
 )
 
 

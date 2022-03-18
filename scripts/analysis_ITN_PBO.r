@@ -1,22 +1,21 @@
-
-
-
-
+library(parallel)
+library(foreach)
+library(doParallel)
 library(ICDMM,
         help,
         pos = 2, lib.loc = NULL
 )
-# seasonal data
-# resource:
 library(tidyverse)
 library(ggplot2)
 library(gdata)
 library("gridExtra")
+library("scales")
+library("here")
 
-gha_params <-
-  read.csv("/Users/sepmein/Dropbox/benchmarking/Data/GHA/gha.csv")
-gha_params$adm1
-plot_export_path <- "/Users/sepmein/Dropbox/benchmarking/Results/PBO vs LLINs/"
+source(here("mbench", "scripts", "set_env.R"))
+source(here("mbench", "scripts", "get_hut_trail_outcome_by_resistance.R"))
+
+plot_export_path <- here("Results", "PBO vs LLINs")
 
 cases_reduction_with_net <- c()
 cases_reduction_with_pbo_same_coverage <- c()
