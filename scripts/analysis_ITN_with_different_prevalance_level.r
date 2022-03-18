@@ -17,7 +17,7 @@ source(here("mbench", "scripts", "get_hut_trail_outcome_by_resistance.R"))
 source(here('mbench', "scripts", "get_prevalence_by_eir.R"))
 
 rows <- 1:nrow(gha_params)
-prevalences <- c(5, 10, 20, 30)
+prevalences <- c(0.05, 0.10, 0.20, 0.30)
 itn_covs <- c(0.6, 0.8)
 
 plot_export_path <- here("Results", "ITNs_different_levels_of_prevalence")
