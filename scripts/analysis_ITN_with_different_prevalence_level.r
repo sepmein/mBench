@@ -2,8 +2,8 @@ library(parallel)
 library(foreach)
 library(doParallel)
 library(ICDMM,
-        help,
-        pos = 2, lib.loc = NULL
+  help,
+  pos = 2, lib.loc = NULL
 )
 library(tidyverse)
 library(ggplot2)
@@ -14,7 +14,7 @@ library("here")
 
 source(here("mbench", "scripts", "set_env.R"))
 source(here("mbench", "scripts", "get_hut_trail_outcome_by_resistance.R"))
-source(here('mbench', "scripts", "get_prevalence_by_eir.R"))
+source(here("mbench", "scripts", "get_prevalence_by_eir.R"))
 
 rows <- 1:nrow(gha_params)
 prevalences <- c(0.05, 0.10, 0.20, 0.30)
@@ -82,19 +82,19 @@ write.csv(
 
 
 output <- read.csv(here("Results", "ITN_with_different_prevalence_level.csv"))
-itn60 = subset(output, itn_coverage == 0.6)
-itn80 = subset(output, itn_coverage == 0.8)
-ratio = itn80['prevalence_with_itn'] / itn60['prevalence_with_itn']
-itn60['ratio'] = ratio
+itn60 <- subset(output, itn_coverage == 0.6)
+itn80 <- subset(output, itn_coverage == 0.8)
+ratio <- itn80["prevalence_with_itn"] / itn60["prevalence_with_itn"]
+itn60["ratio"] <- ratio
 
 library(ggstatsplot)
 
 ggwithinstats(
-    data= itn60,
-    x = initial_prevalence,
-    y = ratio,
-    xlab = "Initial Prevalence(%)",
-    ylab = "Mean Prevalence Ratio(ITN Coverage 80% / 60%)",
+  data = itn60,
+  x = initial_prevalence,
+  y = ratio,
+  xlab = "Initial Prevalence(%)",
+  ylab = "Mean Prevalence Ratio(ITN Coverage 80% / 60%)",
 )
 ggsave(
   here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80.png"),
@@ -158,33 +158,35 @@ write.csv(
 )
 
 detail_itn_60 <- subset(
-    output_detail,
-    itn_coverage == 0.6
+  output_detail,
+  itn_coverage == 0.6
 )
 detail_itn_80 <- subset(
-    output_detail,
-    itn_coverage == 0.8
+  output_detail,
+  itn_coverage == 0.8
 )
-detail_itn_60['prevalence_80'] = detail_itn_80['prevalence']
+detail_itn_60["prevalence_80"] <- detail_itn_80["prevalence"]
 
 ggplot(
-  data = subset(detail_itn_60, initial_prevalence==5),
+  data = subset(detail_itn_60, initial_prevalence == 5),
   aes(x = date)
 ) +
   geom_line(
-      aes(y = prevalence,
+    aes(
+      y = prevalence,
       color = "ITN 60%"
-      ),
+    ),
   ) +
   geom_line(
-      aes(y = prevalence_80, 
+    aes(
+      y = prevalence_80,
       color = "ITN 80%"
-      ),
+    ),
   ) +
   ylab("Prevalence") +
   xlab("Time") +
   ggtitle(
-        "IM - Initial Prevalence 5% "
+    "IM - Initial Prevalence 5% "
   ) +
   scale_color_manual(
     name = "ITN coverage",
@@ -196,30 +198,32 @@ ggplot(
   theme(legend.title = element_text(angle = -90)) +
   facet_wrap(. ~ adm1, ncol = 4)
 ggsave(
-    here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_5.png"),
-    width = 9.22,
-    height = 7.12,
-    dpi = 600
+  here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_5.png"),
+  width = 9.22,
+  height = 7.12,
+  dpi = 600
 )
 
 ggplot(
-  data = subset(detail_itn_60, initial_prevalence==10),
+  data = subset(detail_itn_60, initial_prevalence == 10),
   aes(x = date)
 ) +
   geom_line(
-      aes(y = prevalence,
+    aes(
+      y = prevalence,
       color = "ITN 60%"
-      ),
+    ),
   ) +
   geom_line(
-      aes(y = prevalence_80, 
+    aes(
+      y = prevalence_80,
       color = "ITN 80%"
-      ),
+    ),
   ) +
   ylab("Prevalence") +
   xlab("Time") +
   ggtitle(
-        "IM - Initial Prevalence 10% "
+    "IM - Initial Prevalence 10% "
   ) +
   scale_color_manual(
     name = "ITN coverage",
@@ -232,30 +236,32 @@ ggplot(
   facet_wrap(. ~ adm1, ncol = 4)
 
 ggsave(
-    here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_10.png"),
-    width = 9.22,
-    height = 7.12,
-    dpi = 600
+  here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_10.png"),
+  width = 9.22,
+  height = 7.12,
+  dpi = 600
 )
 
 ggplot(
-  data = subset(detail_itn_60, initial_prevalence==20),
+  data = subset(detail_itn_60, initial_prevalence == 20),
   aes(x = date)
 ) +
   geom_line(
-      aes(y = prevalence,
+    aes(
+      y = prevalence,
       color = "ITN 60%"
-      ),
+    ),
   ) +
   geom_line(
-      aes(y = prevalence_80, 
+    aes(
+      y = prevalence_80,
       color = "ITN 80%"
-      ),
+    ),
   ) +
   ylab("Prevalence") +
   xlab("Time") +
   ggtitle(
-        "IM - Initial Prevalence 20% "
+    "IM - Initial Prevalence 20% "
   ) +
   scale_color_manual(
     name = "ITN coverage",
@@ -267,31 +273,33 @@ ggplot(
   theme(legend.title = element_text(angle = -90)) +
   facet_wrap(. ~ adm1, ncol = 4)
 ggsave(
-    here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_20.png"),
-    width = 9.22,
-    height = 7.12,
-    dpi = 600
+  here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_20.png"),
+  width = 9.22,
+  height = 7.12,
+  dpi = 600
 )
 
 
 ggplot(
-  data = subset(detail_itn_60, initial_prevalence==30),
+  data = subset(detail_itn_60, initial_prevalence == 30),
   aes(x = date)
 ) +
   geom_line(
-      aes(y = prevalence,
+    aes(
+      y = prevalence,
       color = "ITN 60%"
-      ),
+    ),
   ) +
   geom_line(
-      aes(y = prevalence_80, 
+    aes(
+      y = prevalence_80,
       color = "ITN 80%"
-      ),
+    ),
   ) +
   ylab("Prevalence") +
   xlab("Time") +
   ggtitle(
-        "IM - Initial Prevalence 30% "
+    "IM - Initial Prevalence 30% "
   ) +
   scale_color_manual(
     name = "ITN coverage",
@@ -303,8 +311,8 @@ ggplot(
   theme(legend.title = element_text(angle = -90)) +
   facet_wrap(. ~ adm1, ncol = 4)
 ggsave(
-    here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_30.png"),
-    width = 9.22,
-    height = 7.12,
-    dpi = 600
+  here("Results", "IM_prevalence_ratio_between_itn_60_with_itn_80_detail_prevalence_30.png"),
+  width = 9.22,
+  height = 7.12,
+  dpi = 600
 )

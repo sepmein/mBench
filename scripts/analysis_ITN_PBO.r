@@ -69,12 +69,12 @@ for (row in 1:nrow(gha_params)) {
   )
   # plot(adm1_without_intervention$t,
   #     adm1_without_intervention$prev,
-  #     main = paste("Prevalance -", province),
+  #     main = paste("Prevalence -", province),
   #     ylim = c(0, 1),
   #     type = "l"
   # )
-  prevelance_without_net <- sum(adm1_without_intervention$prev)
-  # regular
+  prevalence_without_net <- sum(adm1_without_intervention$prev)
+
   adm1 <- run_model(
     init_EIR = eir,
     country = "Ghana",
@@ -85,18 +85,11 @@ for (row in 1:nrow(gha_params)) {
     irs_cov = irs_cov,
     d_ITN0 = d_ITN_0,
     r_ITN0 = r_ITN_0,
-    # r_ITN1 = r_ITN_1,
     itn_half_life = half_life_itn,
     ITN_IRS_on = 200,
     init_ft = treatment_seeking
   )
-  # plot(adm1$t,
-  #     adm1$prev,
-  #     main = paste("Prevalance With LLINs -", province),
-  #     ylim = c(0, 1),
-  #     type = "l"
-  # )
-  prevelance_with_net <- sum(adm1$prev)
+  prevalence_with_net <- sum(adm1$prev)
   adm1_switching_to_PBO <- run_model(
     init_EIR = eir,
     country = "Ghana",
@@ -107,18 +100,11 @@ for (row in 1:nrow(gha_params)) {
     irs_cov = irs_cov,
     d_ITN0 = d_PBO_0,
     r_ITN0 = r_PBO_0,
-    # r_ITN1 = r_PBO_1,
     itn_half_life = half_life_pbo,
     ITN_IRS_on = 200,
     init_ft = treatment_seeking
   )
-  # plot(adm1_switching_to_PBO$t,
-  #     adm1_switching_to_PBO$prev,
-  #     main = paste("Prevalance Switching to PBO -", province),
-  #     ylim = c(0, 1),
-  #     type = "l"
-  # )
-  prevelance_switching_pbo <- sum(adm1_switching_to_PBO$prev)
+  prevalence_switching_pbo <- sum(adm1_switching_to_PBO$prev)
 
   adm1_switching_to_PBO_same_budget_gf <- run_model(
     init_EIR = eir,
@@ -130,18 +116,11 @@ for (row in 1:nrow(gha_params)) {
     irs_cov = irs_cov,
     d_ITN0 = d_PBO_0,
     r_ITN0 = r_PBO_0,
-    # r_ITN1 = r_PBO_1,
     itn_half_life = half_life_pbo,
     ITN_IRS_on = 200,
     init_ft = treatment_seeking
   )
-  # plot(adm1_switching_to_PBO_same_budget_gf$t,
-  #     adm1_switching_to_PBO_same_budget_gf$prev,
-  #     main = paste("Prevalance Switching to PBO SAME budget -", province),
-  #     ylim = c(0, 1),
-  #     type = "l"
-  # )
-  prevelance_switching_pbo_same_budget_gf <-
+  prevalence_switching_pbo_same_budget_gf <-
     sum(adm1_switching_to_PBO_same_budget_gf$prev)
 
   adm1_switching_to_PBO_same_budget_ellie <- run_model(
@@ -154,33 +133,22 @@ for (row in 1:nrow(gha_params)) {
     irs_cov = irs_cov,
     d_ITN0 = d_PBO_0,
     r_ITN0 = r_PBO_0,
-    # r_ITN1 = r_PBO_1,
     itn_half_life = half_life_pbo,
     ITN_IRS_on = 200,
     init_ft = treatment_seeking
   )
-  # plot(adm1_switching_to_PBO_same_budget_ellie$t,
-  #     adm1_switching_to_PBO_same_budget_ellie$prev,
-  #     main = paste("Prevalance Switching to PBO SAME budget -", province),
-  #     ylim = c(0, 1),
-  #     type = "l"
-  # )
-  prevelance_switching_pbo_same_budget_ellie <-
+  prevalence_switching_pbo_same_budget_ellie <-
     sum(adm1_switching_to_PBO_same_budget_ellie$prev)
 
-  # print("different with/without net:")
-  # print(prevelance_without_net - prevelance_with_net)
-  # print("different with/without PBO:")
-  # print(prevelance_without_net - prevelance_switching_pbo)
-  n_cases_without_net <- prevelance_without_net * total_population
+  n_cases_without_net <- prevalence_without_net * total_population
   n_reduced_cases_net <- total_population *
-    (prevelance_without_net - prevelance_with_net)
+    (prevalence_without_net - prevalence_with_net)
   cases_reduction_with_net <- c(
     cases_reduction_with_net,
     n_reduced_cases_net
   )
   n_reduced_cases_pbo <- total_population *
-    (prevelance_without_net - prevelance_switching_pbo)
+    (prevalence_without_net - prevalence_switching_pbo)
 
   cases_reduction_with_pbo_same_coverage <-
     c(
@@ -188,13 +156,13 @@ for (row in 1:nrow(gha_params)) {
       n_reduced_cases_pbo
     )
   n_reduced_cases_pbo_same_budget_gf <- total_population *
-    (prevelance_without_net - prevelance_switching_pbo_same_budget_gf)
+    (prevalence_without_net - prevalence_switching_pbo_same_budget_gf)
   cases_reduction_with_pbo_same_budget_global_fund <- c(
     cases_reduction_with_pbo_same_budget_global_fund,
     n_reduced_cases_pbo_same_budget_gf
   )
   n_reduced_cases_pbo_same_budget_ellie <- total_population *
-    (prevelance_without_net - prevelance_switching_pbo_same_budget_ellie)
+    (prevalence_without_net - prevalence_switching_pbo_same_budget_ellie)
   cases_reduction_with_pbo_same_budget_ellie_2022 <- c(
     cases_reduction_with_pbo_same_budget_ellie_2022,
     n_reduced_cases_pbo_same_budget_ellie
