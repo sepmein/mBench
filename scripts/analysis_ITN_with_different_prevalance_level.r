@@ -77,11 +77,11 @@ output <- foreach(row = rows, .combine = "rbind") %:%
 
 write.csv(
   output,
-  here("Results", "ITN_with_different_prevalance_level.csv")
+  here("Results", "ITN_with_different_prevalence_level.csv")
 )
 
 
-sweet <- read.csv(here("Results", "sweet.csv"))
+sweet <- read.csv(here("Results", "ITN_with_different_prevalence_level.csv"))
 relative_case_differences <- sweet$cases_difference / sweet$total_population / 3
 contour_breaks <- c(min(relative_case_differences), 0, max(relative_case_differences))
 
