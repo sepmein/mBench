@@ -67,12 +67,6 @@ for (row in 1:nrow(gha_params)) {
     time = 365 * 4,
     init_ft = treatment_seeking
   )
-  # plot(adm1_without_intervention$t,
-  #     adm1_without_intervention$prev,
-  #     main = paste("Prevalence -", province),
-  #     ylim = c(0, 1),
-  #     type = "l"
-  # )
   prevalence_without_net <- sum(adm1_without_intervention$prev)
 
   adm1 <- run_model(

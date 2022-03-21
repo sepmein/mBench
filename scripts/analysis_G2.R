@@ -1,34 +1,46 @@
-
-
-
-
-
-
-
+ 
+library(parallel)
+library(foreach)
+library(doParallel)
 library(ICDMM,
-        help,
-        pos = 2, lib.loc = NULL)
-library(tidyverse)
+  help,
+  pos = 2, lib.loc = NULL
+)
+ library(tidyverse)
 library(ggplot2)
 library(gdata)
 library("gridExtra")
-library(foreach)
-library(doParallel)
-library(scales)
+library("scales")
+library("here")
 
 registerDoParallel(detectCores())
+if (.Platform$OS.type == "unix") {
+  dir <- "/Users/sepmein/Dropbox/benchmarking/"
+} else {
+  dir <- "C:\\Users\\zhangc\\Dropbox\\benchmarking\\"
+}
+
+setwd(dir)
 
 gha_params <-
-  read.csv("/Users/sepmein/Dropbox/benchmarking/Data/GHA/gha.csv")
-
+  read.csv(here("Data", "GHA", "gha.csv"))
+ 
 get_hut_trail_outcome_by_resistance <- function(r) {
   itn_pbo_params <-
     read.csv(
-      "/Users/sepmein/dev/github/Mosquito-Net-Parameters/estimates/best_params_from_systematic_review1.csv"
+       here(
+        "github",
+        "Mosquito-Net-Parameters", "estimates",
+        "best_params_from_systematic_review1.csv"
+      )
     )
   g2_params <-
-    read.csv("/Users/sepmein/dev/github/Mosquito-Net-Parameters/estimates/g2_itn.csv")
-  itn_pbo_params_by_resistance <-
+    read.csv(here(
+      "github",
+      "Mosquito-Net-Parameters",
+      "estimates", "g2_itn.csv"
+    ))
+   itn_pbo_params_by_resistance <-
     subset(itn_pbo_params, resistance == r)
   g2_params_by_resistance <-
     subset(g2_params, bioassay_mortality == 1 - r)
@@ -41,21 +53,23 @@ get_hut_trail_outcome_by_resistance <- function(r) {
   h_itn <- itn_pbo_params_by_resistance$h10 * 365
   h_pbo <- itn_pbo_params_by_resistance$h20 * 365
   h_g2 <- g2_params_by_resistance$gamman_med * 365
-  return (data.frame(d_itn, r_itn, h_itn, d_pbo, r_pbo, h_pbo, d_g2, r_g2, h_g2))
+ 
+  return(data.frame(d_itn, r_itn, h_itn, d_pbo, r_pbo, h_pbo, d_g2, r_g2, h_g2))
 }
 
-plot_export_path <-
-  "/Users/sepmein/Dropbox/benchmarking/Results/G2/"
 
-# rows <- 1:nrow(gha_params)
-rows <- 1:1
-resistances <- seq(0, 100, by = 20) / 100
-coverage_ratios <- seq(0, 100, by = 20)
+rows <- 1:nrow(gha_params)
+resistances <- seq(0, 100, by = 2) / 100
+coverage_ratios <- seq(70.2, 80.2, by = .2)
 
-output <- foreach(row = rows, .combine = 'rbind') %:%
-  foreach(r = resistances, .combine = 'rbind') %:%
-  foreach(ratio = coverage_ratios, .combine = 'rbind') %dopar% {
-    eta <- gha_params[row, "eta"]
+output <- foreach(row = rows, .combine = "rbind") %:%
+  foreach(r = resistances, .combine = "rbind") %:%
+  foreach(
+    ratio = coverage_ratios,
+    .combine = "rbind",
+    .packages = c("here", "ICDMM"),
+  ) %dopar% {
+     eta <- gha_params[row, "eta"]
     rho <- gha_params[row, "rho"]
     eir <- gha_params[row, "eir"]
     province <- gha_params[row, "adm1"]
@@ -117,44 +131,50 @@ output <- foreach(row = rows, .combine = 'rbind') %:%
     n_reduced_cases_net <- total_population *
       (prevalence_with_itn - prevalence_switching_g2)
 
-    print("provine")
-    print(province)
-    print("vector resistance")
-    print(r)
-    print("ratio")
-    print(ratio)
-    print("reduced cases")
-    print(n_reduced_cases_net)
-    print("total population")
-    print(total_population)
-
-    sink("log.txt", append = TRUE)
-    return(
+    setwd(dir)
+    write.table(
       data.frame(
-       # adm1 = province,
-       # vector_resistance = r,
-       # g2_cov_relative_to_itn = ratio,
-       # cases_difference = n_reduced_cases_net,
-       # total_population = total_population
-      )
+        adm1 = province,
+        vector_resistance = r,
+        g2_cov_relative_to_itn = ratio,
+        cases_difference = n_reduced_cases_net,
+        total_population = total_population
+      ),
+      here("Results", "sweet-g2-windows.csv"),
+      sep = ",",
+      append = TRUE,
+      col.names = FALSE
     )
+    # return(data.frame(
+    #   adm1 = province,
+    #   vector_resistance = r,
+    #   g2_cov_relative_to_itn = ratio,
+    #   cases_difference = n_reduced_cases_net,
+    #   total_population = total_population
+    # ))
   }
 
-write.csv(output,
-          "~/Dropbox/benchmarking/Results/sweet-g2.csv")
 
-output <- read.csv("~/Dropbox/benchmarking/Results/sweet-g2.csv")
-
-ggplot(data = output,
-       aes(x = vector_resistance * 100, y = g2_cov_relative_to_itn)) +
-  geom_contour_filled(aes(z =
-                        cases_difference / total_population)) +
+sweet_g2 <- read.csv(here("Results", "sweet-g2.csv"))
+relative_cases_diffences <- sweet_g2$cases_difference / sweet_g2$total_population
+contour_breaks <- c(min(relative_cases_diffences), 0, max(relative_cases_diffences))
+ggplot(
+  data = sweet_g2,
+  aes(x = vector_resistance * 100, y = g2_cov_relative_to_itn)
+) +
+  geom_contour_filled(aes(
+    z =
+      cases_difference / total_population
+  )) +
+  geom_contour(aes(
+    z = cases_difference / total_population
+  ), breaks = contour_breaks) +
   ylab("G2 coverage relative to ITNs(%)") +
   xlab("Vector Resistance(%)") +
   ggtitle("IM - G2 Influences on Coverage and Resistance on Prevalence") +
-  #scale_fill_distiller(palette = "BrBG",
+  # scale_fill_distiller(palette = "BrBG",
   #       values = rescale(c(-500., 0., 100.))
   #      ) +
-  #coord_fixed() +
-  #guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
+  # coord_fixed() +
+  # guides(fill=guide_colorbar(barwidth = .5, barheight = 20, title = "Cases")) +
   facet_wrap(. ~ adm1, ncol = 4)
