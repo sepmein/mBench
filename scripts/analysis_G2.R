@@ -1,3 +1,4 @@
+ 
 library(parallel)
 library(foreach)
 library(doParallel)
@@ -5,7 +6,7 @@ library(ICDMM,
   help,
   pos = 2, lib.loc = NULL
 )
-library(tidyverse)
+ library(tidyverse)
 library(ggplot2)
 library(gdata)
 library("gridExtra")
@@ -23,11 +24,11 @@ setwd(dir)
 
 gha_params <-
   read.csv(here("Data", "GHA", "gha.csv"))
-
+ 
 get_hut_trail_outcome_by_resistance <- function(r) {
   itn_pbo_params <-
     read.csv(
-      here(
+       here(
         "github",
         "Mosquito-Net-Parameters", "estimates",
         "best_params_from_systematic_review1.csv"
@@ -39,7 +40,7 @@ get_hut_trail_outcome_by_resistance <- function(r) {
       "Mosquito-Net-Parameters",
       "estimates", "g2_itn.csv"
     ))
-  itn_pbo_params_by_resistance <-
+   itn_pbo_params_by_resistance <-
     subset(itn_pbo_params, resistance == r)
   g2_params_by_resistance <-
     subset(g2_params, bioassay_mortality == 1 - r)
@@ -52,6 +53,7 @@ get_hut_trail_outcome_by_resistance <- function(r) {
   h_itn <- itn_pbo_params_by_resistance$h10 * 365
   h_pbo <- itn_pbo_params_by_resistance$h20 * 365
   h_g2 <- g2_params_by_resistance$gamman_med * 365
+ 
   return(data.frame(d_itn, r_itn, h_itn, d_pbo, r_pbo, h_pbo, d_g2, r_g2, h_g2))
 }
 
@@ -67,7 +69,7 @@ output <- foreach(row = rows, .combine = "rbind") %:%
     .combine = "rbind",
     .packages = c("here", "ICDMM"),
   ) %dopar% {
-    eta <- gha_params[row, "eta"]
+     eta <- gha_params[row, "eta"]
     rho <- gha_params[row, "rho"]
     eir <- gha_params[row, "eir"]
     province <- gha_params[row, "adm1"]
@@ -129,15 +131,6 @@ output <- foreach(row = rows, .combine = "rbind") %:%
     n_reduced_cases_net <- total_population *
       (prevalence_with_itn - prevalence_switching_g2)
 
-    # print(length(total_population))
-    # print(data.frame(
-    #   adm1 = province,
-    #   vector_resistance = r,
-    #   g2_cov_relative_to_itn = ratio,
-    #   cases_difference = n_reduced_cases_net,
-    #   total_population = total_population
-    # ))
-    # sink("analysis_g2.txt", append = TRUE)
     setwd(dir)
     write.table(
       data.frame(
