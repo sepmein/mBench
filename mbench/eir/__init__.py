@@ -1,0 +1,2 @@
+from .eir_prevalence import get_eir_by_prevalence
+from .eir_prevalence import get_prevalence_by_eir
