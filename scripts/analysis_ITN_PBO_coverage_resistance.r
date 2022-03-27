@@ -16,11 +16,7 @@ source(here("mbench", "scripts", "set_env.R"))
 source(here("mbench", "scripts", "get_hut_trail_outcome_by_resistance.R"))
 
 plot_export_path <-
-  "/Users/sepmein/Dropbox/benchmarking/Results/ITN_PBO_Coverage_Resistance/" # nolint
-itn_pbo_efficacy_ellie_2022_by_resistance_systematic_review <-
-  read.csv(
-    "/Users/sepmein/dev/github/Mosquito-Net-Parameters/estimates/best_params_from_systematic_review1.csv"
-  )
+  here("Results", "ITN_PBO_Coverage_Resistance")
 
 rows <- 1:nrow(gha_params)
 resistances <- seq(90, 100, by = 1) / 100
