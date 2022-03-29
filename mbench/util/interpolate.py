@@ -3,12 +3,7 @@ import math
 import pandas as pd
 
 
-def missing_data(
-    df: pd.DataFrame, 
-    neighbour: pd.DataFrame, 
-    column: str, 
-    round_n: int
-):
+def missing_data(df: pd.DataFrame, neighbour: pd.DataFrame, column: str, round_n: int):
     """
     Missing_data_interpolate(), when data was missing in some provinces, use this function to interpolate the missing data.
     :param neighbour:
@@ -19,19 +14,20 @@ def missing_data(
     """
 
     global result_df
+
     def get_adjacent(
-            adm1: str,
-            adjacent_list: pd.DataFrame,
-            from_column: str = "from",
-            to_column: str = "to",
+        adm1: str,
+        adjacent_list: pd.DataFrame,
+        from_column: str = "from",
+        to_column: str = "to",
     ):
         return adjacent_list[adjacent_list[from_column] == adm1][to_column]
 
     def interpolate(
-            _df: pd.DataFrame,
-            targeted_adm1: str,
-            targeted_column: str,
-            adjacent_adm1: pd.Series,
+        _df: pd.DataFrame,
+        targeted_adm1: str,
+        targeted_column: str,
+        adjacent_adm1: pd.Series,
     ):
         adjacent_adm1_row = _df.loc[adjacent_adm1.tolist(), :]
         interpolated = adjacent_adm1_row[targeted_column].mean()
@@ -55,7 +51,6 @@ def missing_data(
             axis=1,
         )
 
-        
     result_df = df
     result_df = result_df.drop(columns=["__missing"])
     return result_df

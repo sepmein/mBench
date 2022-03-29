@@ -2,13 +2,14 @@ import pandas as pd
 
 
 def adm1_name(
-        df,
-        original_column_name: str = "adm1",
-        new_column_name: str = "adm1",
-        set_index: bool = True,
+    df,
+    original_column_name: str = "adm1",
+    new_column_name: str = "adm1",
+    set_index: bool = True,
 ):
     """
-    pd dataframe reformater for the pandas dataframe. This function is suggested to run every time when importing data from external resource, to ensure the adm1 level district in the Country could be matched to each other.
+    pd dataframe reformater for the pandas dataframe.
+    This function is suggested to run every time when importing data from external resource, to ensure the adm1 level district in the Country could be matched to each other.
     - adm1_name_reformat(), when given a `pandas.DataFrame` object and a target column, this function will
     - Uppercase() the values in the column
     - Substitute space to underscore
