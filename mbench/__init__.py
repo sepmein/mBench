@@ -8,7 +8,7 @@ import math
 from dataclasses import dataclass
 from math import log10
 from tkinter import W
-from typing import Annotated, Any, Callable, Iterator, Union, Type
+from typing import Annotated, Any, Callable, Iterator, Optional, Union, Type
 
 import pandas as pd
 
@@ -31,10 +31,20 @@ class Parameter:
 
     @property
     def value(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return self._value
 
     @value.setter
     def value(self, value):
+        """_summary_
+
+        Args:
+            value (_type_): _description_
+        """
         self._value = value
 
 
@@ -118,7 +128,7 @@ class PrevalenceToEIRConverter(ParameterConverter):
             self.fn = self._converter
         super().__init__(start, to, fn)
 
-    @classmethod
+    @staticmethod
     def _converter(prevalence):
         eir = 10 ** ((prevalence * 100 - 24.68) / 24.2)
         return eir
@@ -143,7 +153,7 @@ class EIRToPrevalenceConverter(ParameterConverter):
             self.fn = self._converter
         super().__init__(start, to, fn)
 
-    @abstractmethod
+    @staticmethod
     def _converter(eir):
         """_summary_
 
@@ -493,31 +503,28 @@ class Country:
 class Data:
     """_summary_"""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, parameter: Type[Parameter], value: float | list | pd.DataFrame | pd.Series
+    ) -> None:
         """_summary_"""
+        self.parameter = parameter
+        self.value = value
 
 
-class CountryData(Country, Data):
+class CountryData(pd.DataFrame):
     """_summary_
 
     Args:
-        Country (_type_): _description_
-        Data (_type_): _description_
+        pd (_type_): _description_
     """
 
-    def __init__(
-        self,
-        districts: Type[Districts],
-        adjacent_districts: Type[Districts],
-        old_new_district_comparison_table: Type[OldDistrictToNewDistrict] = None,
-    ) -> None:
-        """_summary_
+    # properties
+    _metadata = ["added_property"]
 
-        Args:
-            districts (Type[Districts]): _description_
-            adjacent_districts (Type[Districts]): _description_
-            old_new_district_comparison_table (Type[OldDistrictToNewDistrict], optional): _description_. Defaults to None.
-        """
-        super().__init__(
-            districts, adjacent_districts, old_new_district_comparison_table
-        )
+    def __init__(self, country: Type[Country], *args, **kw):
+        super(CountryData, self).__init__(*args, **kw)
+        self.country = country
+
+    @property
+    def _constructor(self):
+        return CountryData
