@@ -518,7 +518,6 @@ class DistrictsToDistricts:
 
         # reformat to map index
         to_map.index = self.districts.reformat(to_format=to_map.index)
-        print(to_map)
         result = self.data.merge(
             right=to_map, how="left", left_on=left_on, right_index=True
         )
@@ -555,6 +554,37 @@ class OldDistrictToNewDistrict(DistrictsToDistricts):
         start = districts.reformat(to_format=start)
         to = districts.match_iso(to_match=to)
         super().__init__(columns, start, to, districts)
+    
+    def map(
+        self, to_map: Type[pd.DataFrame | pd.Series], left_on: str = None
+    ) -> Type[pd.DataFrame]:
+        """This function was created to map from A dataframe to B dataframe with common column
+        For example:
+        to_map:
+        {
+            '_a': 1,
+            '_b': 2
+        }
+
+        self.data
+        {
+            'a': '_a',
+            'b': '_b'
+        }
+
+
+        Args:
+            to_map (Type[pd.DataFrame  |  pd.Series]): _description_
+            left_on (str, optional): _description_. Defaults to None.
+
+        Returns:
+            Type[pd.DataFrame]: _description_
+        """
+        results  = super().map(to_map=to_map, left_on=left_on)
+        results.rename(columns = {'new': 'district'}, inplace=True)
+        results = results.set_index(results['district'])
+        results = results.iloc[: , -1]
+        return results
 
 
 class AdjacentDistricts(DistrictsToDistricts):
@@ -677,6 +707,7 @@ class ParameterData:
                     to_map=value
                 )
                 self._value = mapped_value
+                self._value.name = self.parameter.name
             if interpolate_from_neighbour:
                 # TODO: add code for interpolation
                 pass
