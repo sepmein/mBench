@@ -3,18 +3,20 @@
     Returns:
         _type_: _description_
 """
-from abc import abstractmethod
 import math
 from dataclasses import dataclass
 from math import log10
+from re import L, search
 from tkinter import W
 from typing import Annotated, Any, Callable, Iterator, Optional, Union, Type
+from numpy import isin
 
 import pandas as pd
 
 import mbench.demographic
 import mbench.intervention
 import mbench.util
+import tomli
 
 
 class Parameter:
@@ -23,9 +25,9 @@ class Parameter:
     _value: Any = None
 
     def __init__(
-        self, name: str, default_value: Any, aliases: list[str] = None
+        self, name: str, default_value: Any = None, aliases: list[str] = None
     ) -> None:
-        self.name = name
+        self._name = name
         self.default_value = default_value
         self.aliases = aliases
 
@@ -46,6 +48,15 @@ class Parameter:
             value (_type_): _description_
         """
         self._value = value
+
+    @property
+    def name(self) -> str:
+        """Get parameter name
+
+        Returns:
+            str: name of the parameter
+        """
+        return self._name
 
 
 class ParameterConverter:
@@ -79,6 +90,12 @@ class ParameterConverter:
 
 @dataclass
 class ValueRange:
+    """_summary_
+
+    Raises:
+        ValueError: _description_
+    """
+
     min: float = -math.inf
     max: float = math.inf
 
@@ -88,12 +105,25 @@ class ValueRange:
 
 
 class Prevalence(Parameter):
+    """_summary_
+
+    Args:
+        Parameter (_type_): _description_
+    """
+
     def __init__(
         self,
         default_value: Annotated[float, ValueRange(0.0, 1.0)] = None,
         name: str = "Prevalence",
         aliases: list[str] = None,
     ) -> None:
+        """_summary_
+
+        Args:
+            default_value (Annotated[float, ValueRange, optional): _description_. Defaults to None.
+            name (str, optional): _description_. Defaults to "Prevalence".
+            aliases (list[str], optional): _description_. Defaults to None.
+        """
         super().__init__(name, default_value, aliases)
 
 
@@ -110,6 +140,12 @@ class EIR(Parameter):
 
 
 class PrevalenceToEIRConverter(ParameterConverter):
+    """_summary_
+
+    Args:
+        ParameterConverter (_type_): _description_
+    """
+
     def __init__(
         self,
         fn: Callable,
@@ -281,47 +317,129 @@ class District:
     """_summary_"""
 
     def __init__(self, iso: str, name: str = "", aliases: list[str] = []) -> None:
-        """_summary_"""
+        """Create a district of a country
+
+        Args:
+            iso (str): iso name of the district
+            name (str, optional): name of the District. Defaults to "".
+            aliases (list[str], optional): aliases name of the district. Defaults to [].
+        """
         self.aliases = aliases
-        self.iso = iso
-        self.name = name
-        self._uppercase()
-        self._format()
+        self.iso = self.format(iso)
+        self.name = self.format(name)
 
-    def _uppercase(self) -> None:
-        self.iso = self.iso.upper()
-        self.aliases = [alias.upper() for alias in self.aliases]
+    def format(self, string: str) -> str:
+        """
+        Format string to uppercase, and replace connection symbols to '_'
 
-    def _format(self) -> None:
-        self.name = self.name.replace("-", "_")
-        self.aliases = [alias.replace("-", "_") for alias in self.aliases]
-        self.aliases = [alias.replace(" ", "_") for alias in self.aliases]
-        self.aliases = [alias.replace("  ", "_") for alias in self.aliases]
-        self.aliases = [alias.replace("/", "_") for alias in self.aliases]
+        Args:
+            string (str): string to be formatted
+
+        Returns:
+            str: formatted string
+        """
+        string = string.replace("-", "_")
+        string = string.replace(" ", "_")
+        string = string.replace("  ", "_")
+        string = string.replace("/", "_")
+        string = string.upper()
+        return string
+
+    def search(self, search_string: str) -> str | bool:
+        """
+        Search a given string, this function will reformat the search string and the aliases of District first and match,
+        if found in this District, return the iso name of it
+
+        Args:
+            search_string (str): search string, case insensitive
+
+        Returns:
+            str | bool: Iso string if found, and False if not found
+        """
+        # upper case and format search string
+        search_string = self.format(search_string)
+
+        # reformat aliases
+        aliases = [self.format(alias) for alias in self.aliases]
+        # if found return iso string
+        if search_string in aliases:
+            return self.iso
+        else:
+            return False
 
 
 class Districts:
-    def __init__(self, district_list: list[Type[District]]):
+    """_summary_"""
+
+    def __init__(self, district_list: list[Type[District]]) -> None:
         self._list = district_list
 
-    def add(self, district: Type[District]):
+    def add(self, district: Type[District]) -> None:
         self._list.append(district)
 
     @property
-    def list(self):
+    def l(self) -> list[str]:
         return [district.iso for district in self._list]
 
-    def reformat(self, name: str) -> str:
+    @property
+    def n(self) -> int:
+        return len(self._list)
+
+    def reformat(
+        self, to_format: str | list[str] | Type[pd.Series]
+    ) -> str | Type[pd.Series]:
         """
         from name
         :param name:
         :return:
         """
-        formated_district = ""
-        for district in self._list:
-            if name in district.aliases:
-                formated_district = district.iso
-        return formated_district
+
+        formated = to_format
+
+        def reformat_in_districts(name):
+            formated_district = name
+            for district in self._list:
+                formated_district = district.format(string=name)
+            return formated_district
+
+        if isinstance(to_format, str):
+            formated = reformat_in_districts(to_format)
+            # if
+        elif isinstance(to_format, list):
+            formated = [reformat_in_districts(n) for n in to_format]
+        elif isinstance(to_format, pd.Series):
+            formated = to_format.apply(reformat_in_districts)
+        return formated
+
+    def match_iso(
+        self, to_match: str | list[str] | Type[pd.Series]
+    ) -> str | list[str] | Type[pd.Series]:
+        """match iso district name for to match string or list
+
+        Args:
+            to_match (str | list[str]): _description_
+
+        Raises:
+            Exception: _description_
+
+        Returns:
+            str | list[str]: _description_
+        """
+
+        def match_in_districts(_to_match: str) -> str:
+            result = _to_match
+            for district in self._list:
+                search_result = district.search(search_string=_to_match)
+                if search_result is not False:
+                    result = search_result
+            return result
+
+        if isinstance(to_match, str):
+            return match_in_districts(to_match)
+        elif isinstance(to_match, list):
+            return [match_in_districts(t) for t in to_match]
+        elif isinstance(to_match, pd.Series):
+            return to_match.apply(match_in_districts)
 
 
 class OldDistricts(Districts):
@@ -349,7 +467,11 @@ class DistrictsToDistricts:
     """
 
     def __init__(
-        self, columns: list[str], data: Type[pd.DataFrame], districts: Type[Districts]
+        self,
+        columns: list[str],
+        start: Type[pd.Series],
+        to: Type[pd.Series],
+        districts: Type[Districts],
     ) -> None:
         """_summary_
 
@@ -358,13 +480,43 @@ class DistrictsToDistricts:
             data (Type[pd.DataFrame]): _description_
         """
         self.columns = columns
+        self.start_column = columns[0]
+        self.to_column = columns[1]
         self.districts = districts
-        self.data = data
-        self._import_dataframe()
-
-    def _import_dataframe(self):
-        self.data = self.data.applymap(lambda x: self.districts.reformat(x))
+        self.data = pd.concat([start, to], axis=1)
         self.data.columns = self.columns
+
+    def map(
+        self, to_map: Type[pd.DataFrame | pd.Series], left_on: str = None
+    ) -> Type[pd.DataFrame]:
+        """This function was created to map from A dataframe to B dataframe with common column
+        For example:
+        to_map:
+        {
+            '_a': 1,
+            '_b': 2
+        }
+
+        self.data
+        {
+            'a': '_a',
+            'b': '_b'
+        }
+
+
+        Args:
+            to_map (Type[pd.DataFrame  |  pd.Series]): _description_
+            left_on (str, optional): _description_. Defaults to None.
+
+        Returns:
+            Type[pd.DataFrame]: _description_
+        """
+        if left_on is None:
+            left_on = self.start_column
+        result = self.data.merge(
+            right=to_map, how="left", left_on=left_on, right_index=True
+        )
+        return result
 
 
 class OldDistrictToNewDistrict(DistrictsToDistricts):
@@ -379,18 +531,24 @@ class OldDistrictToNewDistrict(DistrictsToDistricts):
 
     def __init__(
         self,
-        data: Type[pd.DataFrame],
+        start: Type[pd.Series],
+        to: Type[pd.Series],
         districts: Type[Districts],
-        columns: list[str] = ["old", "new"],
+        columns: list[str] = None,
     ) -> None:
-        """_summary_
+        """mapping from old district to new district
 
         Args:
-            data (Type[pd.DataFrame]): _description_
+            columns (list[str]): _description_
+            start (Type[pd.Series]): _description_
+            to (Type[pd.Series]): _description_
             districts (Type[Districts]): _description_
-            columns (list[str], optional): _description_. Defaults to ['old', 'new'].
         """
-        super().__init__(columns, data, districts)
+        if columns is None:
+            columns = ["old", "new"]
+        start = districts.reformat(to_format=start)
+        to = districts.match_iso(to_match=to)
+        super().__init__(columns, start, to, districts)
 
 
 class AdjacentDistricts(DistrictsToDistricts):
@@ -405,18 +563,14 @@ class AdjacentDistricts(DistrictsToDistricts):
 
     def __init__(
         self,
-        data: Type[pd.DataFrame],
+        start: Type[pd.Series],
+        to: Type[pd.Series],
         districts: Type[Districts],
-        columns: list[str] = ["from", "to"],
+        columns: list[str] = None,
     ) -> None:
-        """_summary_
-
-        Args:
-            data (Type[pd.DataFrame]): _description_
-            districts (Type[Districts]): _description_
-            columns (list[str], optional): _description_. Defaults to ["from", "to"].
-        """
-        super().__init__(columns, data, districts)
+        if columns is None:
+            columns = ["start", "to"]
+        super().__init__(columns, start, to, districts)
 
 
 class Country:
@@ -425,8 +579,8 @@ class Country:
     def __init__(
         self,
         districts: Type[Districts],
-        adjacent_districts: Type[Districts],
-        old_new_district_comparison_table: Type[OldDistrictToNewDistrict] = None,
+        adjacent_districts: Type[Districts] = None,
+        old_districts_to_new_districts: Type[OldDistrictToNewDistrict] = None,
     ) -> None:
         """_summary_
 
@@ -437,17 +591,18 @@ class Country:
             new_old_district_comparison_table (Iterator[str], optional): _description_. Defaults to None.
         """
 
-        self.districts = districts
+        self._districts = districts
+        self.n_districts = districts.n
         self.adjacent_districts = adjacent_districts
-        self.new_old_district_comparison_table = old_new_district_comparison_table
+        self.old_districts_to_new_districts = old_districts_to_new_districts
 
     @staticmethod
     def _reformat_adm1_name(
-        df,
+        df: Type[pd.DataFrame],
         original_column_name: str = "adm1",
         new_column_name: str = "adm1",
         set_index: bool = True,
-    ):
+    ) -> Type[pd.DataFrame]:
         """
         pd dataframe reformater for the pandas dataframe.
         This function is suggested to run every time when importing data from external resource, to ensure the adm1 level district in the Country could be matched to each other.
@@ -490,25 +645,52 @@ class Country:
 
         return df
 
-
-#
-# gha = Country(
-#     districts=[ahafo, ashanti, bono, bono_east, central, eastern, greater_accra, north_east, northern, oti, savannah,
-#                upper_east, upper_west, volta, western, western_north],
-#
-#
-# )
+    @property
+    def districts(self):
+        return self._districts.l
 
 
-class Data:
+class ParameterData:
     """_summary_"""
 
     def __init__(
-        self, parameter: Type[Parameter], value: float | list | pd.DataFrame | pd.Series
+        self,
+        parameter: Type[Parameter],
+        value: float | list | pd.DataFrame | pd.Series,
+        country: Type[Country],
+        from_old_districts_system: bool = False,
+        interpolate_from_neighbour: bool = False,
     ) -> None:
-        """_summary_"""
         self.parameter = parameter
-        self.value = value
+        self._value = value
+        self.country = country
+
+        if isinstance(value, (list, pd.DataFrame, pd.Series)):
+            if from_old_districts_system:
+                mapped_value = self.country.old_districts_to_new_districts.map(
+                    to_map=value
+                )
+                self._value = mapped_value
+            if interpolate_from_neighbour:
+                # TODO: add code for interpolation
+                pass
+            if len(self._value) != self.country.n_districts:
+                raise Exception(
+                    "Add Parameter error. Number of new parameter value differs from the number of districts"
+                )
+
+    @property
+    def name(self) -> str:
+        """Name for Parameter data, a convinient function for retrieve name
+
+        Returns:
+            str: the name of the parameter
+        """
+        return self.parameter.name
+
+    @property
+    def value(self) -> float | list | pd.DataFrame | pd.Series:
+        return self.value
 
 
 class CountryData(pd.DataFrame):
@@ -519,12 +701,32 @@ class CountryData(pd.DataFrame):
     """
 
     # properties
-    _metadata = ["added_property"]
+    _metadata = ["CountryData"]
 
     def __init__(self, country: Type[Country], *args, **kw):
-        super(CountryData, self).__init__(*args, **kw)
+        super().__init__(*args, **kw)
         self.country = country
+        self.index = country.districts
 
     @property
     def _constructor(self):
         return CountryData
+
+    @property
+    def _constructor_sliced(self):
+        return CountryDataColumn
+
+    def add_parameter(
+        self,
+        parameter_data: Type[ParameterData],
+    ):
+        """_summary_
+
+        Args:
+            parameter (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+
+        self[parameter_data.name] = parameter_data.value
