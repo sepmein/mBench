@@ -386,7 +386,7 @@ class Districts:
         return len(self._list)
 
     def reformat(
-        self, to_format: str | list[str] | Type[pd.Series]
+        self, to_format: str | list[str] | Type[pd.Series] | Type[pd.Index]
     ) -> str | Type[pd.Series]:
         """
         from name
@@ -408,7 +408,9 @@ class Districts:
         elif isinstance(to_format, list):
             formated = [reformat_in_districts(n) for n in to_format]
         elif isinstance(to_format, pd.Series):
-            formated = to_format.apply(reformat_in_districts)
+            formated = to_format.map(reformat_in_districts)
+        elif isinstance(to_format, pd.Index):
+            formated = to_format.map(reformat_in_districts)
         return formated
 
     def match_iso(
@@ -513,6 +515,10 @@ class DistrictsToDistricts:
         """
         if left_on is None:
             left_on = self.start_column
+
+        # reformat to map index
+        to_map.index = self.districts.reformat(to_format=to_map.index)
+        print(to_map)
         result = self.data.merge(
             right=to_map, how="left", left_on=left_on, right_index=True
         )
