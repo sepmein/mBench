@@ -383,7 +383,7 @@ class Districts:
 
     def reformat(
         self, to_format: str | list[str] | Type[pd.Series] | Type[pd.Index]
-    ) -> str | Type[pd.Series]:
+    ) -> str | list[str] | Type[pd.Index] | Type[pd.Series]:
         """
         from name
         :param name:
@@ -403,15 +403,13 @@ class Districts:
             # if
         elif isinstance(to_format, list):
             formated = [reformat_in_districts(n) for n in to_format]
-        elif isinstance(to_format, pd.Series):
-            formated = to_format.map(reformat_in_districts)
-        elif isinstance(to_format, pd.Index):
+        elif isinstance(to_format, (pd.Series, pd.Index)):
             formated = to_format.map(reformat_in_districts)
         return formated
 
     def match_iso(
-        self, to_match: str | list[str] | Type[pd.Series]
-    ) -> str | list[str] | Type[pd.Series]:
+        self, to_match: str | list[str] | Type[pd.Series] | Type[pd.Index]
+    ) -> str | list[str] | Type[pd.Series] | Type[pd.Index]:
         """match iso district name for to match string or list
 
         Args:
@@ -436,8 +434,12 @@ class Districts:
             return match_in_districts(to_match)
         elif isinstance(to_match, list):
             return [match_in_districts(t) for t in to_match]
-        elif isinstance(to_match, pd.Series):
-            return to_match.apply(match_in_districts)
+        elif isinstance(to_match, (pd.Series, pd.Index)):
+            return to_match.map(match_in_districts)
+        else:
+            raise Exception(
+                "Districts: Match ISO failed, to match value should be one of str, list of str, pd.Series or pd.Index"
+            )
 
 
 class OldDistricts(Districts):
@@ -550,7 +552,7 @@ class OldDistrictToNewDistrict(DistrictsToDistricts):
         start = districts.reformat(to_format=start)
         to = districts.match_iso(to_match=to)
         super().__init__(columns, start, to, districts)
-    
+
     def map(
         self, to_map: Type[pd.DataFrame | pd.Series], left_on: str = None
     ) -> Type[pd.DataFrame]:
@@ -576,10 +578,10 @@ class OldDistrictToNewDistrict(DistrictsToDistricts):
         Returns:
             Type[pd.DataFrame]: _description_
         """
-        results  = super().map(to_map=to_map, left_on=left_on)
-        results.rename(columns = {'new': 'district'}, inplace=True)
-        results = results.set_index(results['district'])
-        results = results.iloc[: , -1]
+        results = super().map(to_map=to_map, left_on=left_on)
+        results.rename(columns={"new": "district"}, inplace=True)
+        results = results.set_index(results["district"])
+        results = results.iloc[:, -1]
         return results
 
 
@@ -681,49 +683,98 @@ class Country:
     def districts(self):
         return self._districts.l
 
+    def reformat(self, to_format):
+        return self._districts.reformat(to_format)
 
-class ParameterData:
-    """_summary_"""
+    def match_iso(self, to_match):
+        return self._districts.match_iso(to_match)
 
+
+class ParameterData(pd.Series):
     def __init__(
         self,
         parameter: Type[Parameter],
-        value: float | list | pd.DataFrame | pd.Series,
         country: Type[Country],
         from_old_districts_system: bool = False,
         interpolate_from_neighbour: bool = False,
-    ) -> None:
-        self.parameter = parameter
-        self._value = value
+        *args,
+        **kwargs,
+    ) -> Type[pd.Series]:
+        data = kwargs.get("data")
+
+        # if from old district
+        if from_old_districts_system:
+            mapped_value = country.old_districts_to_new_districts.map(to_map=data)
+            kwargs["data"] = mapped_value
+            super().__init__(*args, **kwargs)
+
+        elif interpolate_from_neighbour:
+            pass
+
+        else:
+            kwargs["data"] = data
+            super().__init__(*args, **kwargs)
+            # format and match_iso:self index using country.districts.format
+            self.index = country.reformat(self.index)
+            self.index = country.match_iso(self.index)
+
         self.country = country
+        self.parameter = parameter
+        self.name = parameter.name
 
-        if isinstance(value, (list, pd.DataFrame, pd.Series)):
-            if from_old_districts_system:
-                mapped_value = self.country.old_districts_to_new_districts.map(
-                    to_map=value
-                )
-                self._value = mapped_value
-                self._value.name = self.parameter.name
-            if interpolate_from_neighbour:
-                # TODO: add code for interpolation
-                pass
-            if len(self._value) != self.country.n_districts:
-                raise Exception(
-                    "Add Parameter error. Number of new parameter value differs from the number of districts"
-                )
+    # @property
+    # def name(self) -> str:
+    #     """Name for Parameter data, a convinient function for retrieve name
+
+    #     Returns:
+    #         str: the name of the parameter
+    #     """
+    #     return self.parameter.name
 
     @property
-    def name(self) -> str:
-        """Name for Parameter data, a convinient function for retrieve name
+    def _constructor(self):
+        return ParameterData
 
-        Returns:
-            str: the name of the parameter
-        """
-        return self.parameter.name
 
-    @property
-    def value(self) -> float | list | pd.DataFrame | pd.Series:
-        return self.value
+# class ParameterData:
+#     """_summary_"""
+
+#     def __init__(
+#         self,
+#         parameter: Type[Parameter],
+#         value: float | list | pd.DataFrame | pd.Series,
+#         country: Type[Country],
+#         from_old_districts_system: bool = False,
+#         interpolate_from_neighbour: bool = False,
+#     ) -> None:
+#         self.parameter = parameter
+#         self._value = value
+#         self.country = country
+
+#         if isinstance(value, (list, pd.DataFrame, pd.Series)):
+#             if from_old_districts_system:
+#                 mapped_value = self.country.old_districts_to_new_districts.map(
+#                     to_map=value
+#                 )
+#                 self._value = mapped_value
+#                 self._value.name = self.parameter.name
+#             if interpolate_from_neighbour:
+#                 # TODO: add code for interpolation
+#                 pass
+#             if len(self._value) != self.country.n_districts:
+#                 raise Exception(
+#                     "Add Parameter error. Number of new parameter value differs from the number of districts"
+#                 )
+#         elif isinstance(value, float):
+#             pass
+#         else:
+#             raise Exception(
+#                 "Add Parameter error, value should be one of the type of float, list, pd.DataFrame or pd.Series"
+#             )
+
+#     @property
+#     def value(self) -> float | list | pd.DataFrame | pd.Series:
+#         return self.value
 
 
 class CountryData(pd.DataFrame):
@@ -745,9 +796,9 @@ class CountryData(pd.DataFrame):
     def _constructor(self):
         return CountryData
 
-    @property
-    def _constructor_sliced(self):
-        return CountryDataColumn
+    # @property
+    # def _constructor_sliced(self):
+    #     return CountryDataColumn
 
     def add_parameter(
         self,
