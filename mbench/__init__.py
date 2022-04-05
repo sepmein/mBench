@@ -7,6 +7,7 @@ import math
 from dataclasses import dataclass
 from math import log10
 from typing import Annotated, Any, Callable, Iterator, Optional, Union, Type
+from pydantic import validate_arguments
 
 import pandas as pd
 
@@ -21,11 +22,16 @@ class Parameter:
     _value: Any = None
 
     def __init__(
-        self, name: str, default_value: Any = None, aliases: list[str] = None
+        self,
+        name: str,
+        default_value: Any = None,
+        aliases: list[str] = None,
+        description: str = None,
     ) -> None:
         self._name = name
         self.default_value = default_value
         self.aliases = aliases
+        self.description = description
 
     @property
     def value(self):
@@ -135,6 +141,16 @@ class EIR(Parameter):
             aliases = ["Entomology Innoculation Rate"]
 
 
+class ItnCoverage(Parameter):
+    def __init__(
+        self,
+        name: str = "Itn Coverage",
+        default_value: Any = None,
+        aliases: list[str] = None,
+    ) -> None:
+        super().__init__(name, default_value, aliases, description)
+
+
 class PrevalenceToEIRConverter(ParameterConverter):
     """_summary_
 
@@ -198,6 +214,7 @@ class EIRToPrevalenceConverter(ParameterConverter):
         prevalence = (24.2 * log10(eir) + 24.68) / 100
         return prevalence
 
+class 
 
 class ParameterList:
     """_summary_"""
@@ -690,120 +707,65 @@ class Country:
         return self._districts.match_iso(to_match)
 
 
-class ParameterData(pd.Series):
+class ParameterData:
     def __init__(
         self,
         parameter: Type[Parameter],
         country: Type[Country],
+        data: Type[pd.Series],
         from_old_districts_system: bool = False,
         interpolate_from_neighbour: bool = False,
-        *args,
-        **kwargs,
-    ) -> Type[pd.Series]:
-        data = kwargs.get("data")
+    ) -> None:
+
+        self.country = country
+        self.parameter = parameter
+        self.from_old_districts_system = from_old_districts_system
+        self.interpolate_from_neighbour = interpolate_from_neighbour
+        # data type should be pd.Series
+        if not isinstance(data, pd.Series):
+            raise Exception("Data type should be pd.Series")
 
         # if from old district
         if from_old_districts_system:
-            mapped_value = country.old_districts_to_new_districts.map(to_map=data)
-            kwargs["data"] = mapped_value
-            super().__init__(*args, **kwargs)
+            self.data = pd.Series(
+                data=country.old_districts_to_new_districts.map(to_map=data)
+            )
 
         elif interpolate_from_neighbour:
             pass
 
         else:
-            kwargs["data"] = data
-            super().__init__(*args, **kwargs)
             # format and match_iso:self index using country.districts.format
-            self.index = country.reformat(self.index)
-            self.index = country.match_iso(self.index)
-
-        self.country = country
-        self.parameter = parameter
-        self.name = parameter.name
-
-    # @property
-    # def name(self) -> str:
-    #     """Name for Parameter data, a convinient function for retrieve name
-
-    #     Returns:
-    #         str: the name of the parameter
-    #     """
-    #     return self.parameter.name
+            self.data = pd.Series(data)
+            self.data.index = country.reformat(self.data.index)
+            self.data.index = country.match_iso(self.data.index)
 
     @property
-    def _constructor(self):
-        return ParameterData
+    def name(self) -> str:
+        """Name for Parameter data, a convinient function for retrieve name
+
+        Returns:
+            str: the name of the parameter
+        """
+        return self.parameter.name
 
 
-# class ParameterData:
-#     """_summary_"""
-
-#     def __init__(
-#         self,
-#         parameter: Type[Parameter],
-#         value: float | list | pd.DataFrame | pd.Series,
-#         country: Type[Country],
-#         from_old_districts_system: bool = False,
-#         interpolate_from_neighbour: bool = False,
-#     ) -> None:
-#         self.parameter = parameter
-#         self._value = value
-#         self.country = country
-
-#         if isinstance(value, (list, pd.DataFrame, pd.Series)):
-#             if from_old_districts_system:
-#                 mapped_value = self.country.old_districts_to_new_districts.map(
-#                     to_map=value
-#                 )
-#                 self._value = mapped_value
-#                 self._value.name = self.parameter.name
-#             if interpolate_from_neighbour:
-#                 # TODO: add code for interpolation
-#                 pass
-#             if len(self._value) != self.country.n_districts:
-#                 raise Exception(
-#                     "Add Parameter error. Number of new parameter value differs from the number of districts"
-#                 )
-#         elif isinstance(value, float):
-#             pass
-#         else:
-#             raise Exception(
-#                 "Add Parameter error, value should be one of the type of float, list, pd.DataFrame or pd.Series"
-#             )
-
-#     @property
-#     def value(self) -> float | list | pd.DataFrame | pd.Series:
-#         return self.value
-
-
-class CountryData(pd.DataFrame):
+class CountryData:
     """_summary_
 
     Args:
         pd (_type_): _description_
     """
 
-    # properties
-    _metadata = ["CountryData"]
-
-    def __init__(self, country: Type[Country], *args, **kw):
-        super().__init__(*args, **kw)
+    def __init__(self, country: Type[Country]):
+        self.data = pd.DataFrame()
+        self.data.index = country.districts
         self.country = country
-        self.index = country.districts
-
-    @property
-    def _constructor(self):
-        return CountryData
-
-    # @property
-    # def _constructor_sliced(self):
-    #     return CountryDataColumn
 
     def add_parameter(
         self,
         parameter_data: Type[ParameterData],
-    ):
+    ) -> None:
         """_summary_
 
         Args:
@@ -812,5 +774,4 @@ class CountryData(pd.DataFrame):
         Returns:
             _type_: _description_
         """
-
-        self[parameter_data.name] = parameter_data.value
+        self.data[parameter_data.name] = parameter_data.data.values
